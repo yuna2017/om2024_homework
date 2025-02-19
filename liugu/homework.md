@@ -100,4 +100,104 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 ### 3.1.4 
 然后，从模型输出的Frame Transforms解码原子坐标，并计算局部的键长，键角等然后将其正则化，接下来进行置信度评估，最后输出每个样本的3D结构为PDB文件等。
 
+## 4 优化代码片段
 
+### 4.1 编译缓存
+```python
+import os
+import jax
+
+def configure_compilation_cache(cache_dir: str):
+    """配置JAX编译缓存目录"""
+    os.makedirs(cache_dir, exist_ok=True)
+    jax.config.update('jax_compilation_cache_dir', cache_dir)
+    jax.config.update('jax_platforms', 'cpu,cuda')
+    jax.config.update('jax_skip_backend_check', True)
+
+class ModelCompiler:
+    def __init__(self, model_config, device, model_dir):
+        self._model_config = model_config
+        self._device = device
+        self._model_dir = model_dir
+        
+    @functools.cached_property
+    def compiled_model(self):
+        """缓存已编译的模型函数"""
+        @hk.transform
+        def forward_fn(batch):
+            return model.Model(self._model_config)(batch)
+            
+        return jax.jit(forward_fn.apply, device=self._device)
+```
+### 4.2 特征缓存模块
+```python
+import hashlib
+import numpy as np
+import pathlib
+
+class FeatureCache:
+    def __init__(self, cache_dir: str):
+        self.cache_dir = pathlib.Path(cache_dir)
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+    def _get_cache_key(self, fold_input) -> str:
+        input_hash = hashlib.sha256(fold_input.to_json().encode()).hexdigest()
+        return f"feat_{input_hash}"
+        
+    def load(self, fold_input):
+        cache_path = self.cache_dir / f"{self._get_cache_key(fold_input)}.npz"
+        return np.load(cache_path) if cache_path.exists() else None
+        
+    def save(self, fold_input, features):
+        cache_path = self.cache_dir / f"{self._get_cache_key(fold_input)}.npz"
+        np.savez_compressed(cache_path, **features)
+```
+### 4.3 特征优化模块
+``` python 
+import numpy as np
+import scipy.sparse
+
+def optimize_features(features, dtype=np.float32):
+    """优化特征内存布局和数据类型"""
+    optimized = {}
+    for key, value in features.items():
+        if isinstance(value, np.ndarray):
+            # 统一数据类型
+            if value.dtype in (np.float64, np.float32):
+                value = value.astype(dtype)
+            # 优化内存布局
+            if not value.flags['C_CONTIGUOUS']:
+                value = np.ascontiguousarray(value)
+        optimized[key] = value
+    return optimized
+
+def compress_features(features, compression_level=2):
+    """特征压缩优化"""
+    compressed = {}
+    for key, value in features.items():
+        if isinstance(value, np.ndarray):
+            # 稀疏矩阵压缩
+            if compression_level >=2 and value.size > 1000:
+                sparsity = np.count_nonzero(value)/value.size
+                if sparsity < 0.1:
+                    value = scipy.sparse.csr_matrix(value)
+        compressed[key] = value
+    return compressed
+```
+### 4.4 并行处理模块
+``` python 
+
+import multiprocessing
+from typing import List
+
+def parallel_featurize(inputs: List, num_workers: int = None):
+    """并行特征化处理"""
+    num_workers = num_workers or multiprocessing.cpu_count()
+    
+    def _process_single(args):
+        # 实际特征化处理函数
+        return featurisation.featurise_input_single(*args)
+        
+    with multiprocessing.Pool(num_workers) as pool:
+        return pool.starmap(_process_single, inputs)
+```
