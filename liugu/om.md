@@ -8,12 +8,12 @@
 
 ### 2.1 计算芯片选型
 
-| 候选方案       | 性能(TOPS) | 功耗(W) | 单价(万元) | 生态成熟度 | 自主可控性 |
+| 候选方案       | 性能(TOPS@FP16) | 功耗(W) | 单价(万元) | 生态成熟度 | 自主可控性 |
 |----------------|------------|---------|------------|------------|------------|
-| 华为升腾910B   | 256        | 300     | 8-10       | ★★★★☆      | ★★★★★      |
-| 昆仑芯二代     | 128        | 200     | 6-8        | ★★★☆☆      | ★★★★★      |
-| 寒武纪MLU370   | 192        | 250     | 7-9        | ★★★☆☆      | ★★★★★      |
-| 海光DCU        | 160        | 280     | 5-7        | ★★★★☆      | ★★★★☆      |
+| 华为升腾910B   | 320        | 310     | 12       | ★★★★☆      | ★★★★★      |
+| 昆仑芯二代     | 128-192        | 120     | 未找到公开资料        | ★★★☆☆      | ★★★★★      |
+| 寒武纪MLU370-X8   | 96        | 250     | 4.2        | ★★★☆☆      | ★★★★★      |
+| 海光DCU-Z100L-LP        | 24.5        | 280     | 未找到公开资料，根据Z100-L推测价格应在3w以下        | ★★★★☆      | ★★★★☆      |
 
 **选择理由**：华为升腾910B凭借最高计算性能、相对成熟的生态(支持主流AI框架)和完全自主可控的优势成为首选。其达芬奇架构专为AI计算优化，且华为提供完整的工具链支持。
 
@@ -26,15 +26,10 @@
 - 网络互联：华为CloudEngine 100Gbps RDMA网络
 
 **性能预估**：
-- 理论峰值算力：8节点×4卡×256TOPS = 8,192TOPS
+- 理论峰值算力：8节点×4卡×320TOPS = 10,240TOPS
 - Deepseek R1推理速度：预计可达150-200 tokens/s(全精度)
 
-### 2.3 低成本替代方案
 
-对于预算极其有限的场景，可考虑：
-- 单节点配置：2×昆仑芯二代 + 256GB内存
-- 成本：约2万元
-- 性能：约1-3 tokens/s
 
 ## 3. 软件架构选型
 
@@ -108,3 +103,10 @@
 ## 7. 致谢
 1. DeepSeek
 2. ChatGPT
+## 8. 参考文献
+1. [中美AI芯片对决：华为昇腾910B vs 英伟达H100性能实测](https://www.toutiao.com/article/7473846982990135817/?wid=1748437143426)
+2. [英伟达中国特供AI芯片H20，正面PK华为昇腾 910B！中美科技之争越演愈烈](https://news.qq.com/rain/a/20240203A00IIX00)
+3. [外媒评测百度昆仑AI芯片2代将与英伟达A100等产生竞争](https://zhuanlan.zhihu.com/p/402108151)
+4. [昆仑芯1代与2代性能对比](https://www.hangyan.co/charts/3435652970530735613)
+5. [【CN-环境1】MLU370 加速卡简介和安装](https://zhuanlan.zhihu.com/p/592955423)
+6. [京东MLU370-X8-48G商品详情页](https://item.jd.com/100134106560.html?extension_id=eyJhZCI6IiIsImNoIjoiIiwic2hvcCI6IiIsInNrdSI6IiIsInRzIjoiIiwidW5pcWlkIjoie1wiY2xpY2tfaWRcIjpcIjg1ODI5Yjg3LTA5OWEtNGE2Ny04YTUyLTc4OTZhMGI4MDY4MlwiLFwicG9zX2lkXCI6XCIyNjE3XCIsXCJzaWRcIjpcIjIxMjEyYTczLWNjNTktNDk0YS1hZGI2LWJiZTk3NWJhYjQ3ZFwiLFwic2t1X2lkXCI6XCIxMDAxMzQxMDYzODBcIn0ifQ==#crumb-wrap)
